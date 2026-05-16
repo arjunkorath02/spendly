@@ -22,6 +22,7 @@ export type BankAccount = {
   account_type: string;
   color: string;
   is_active: boolean;
+  opening_balance: number;
   created_at: string;
 };
 
@@ -58,6 +59,7 @@ export type Expense = {
   user_id: string;
   title: string;
   amount: number;
+  type: 'expense' | 'income';
   category_id: string | null;
   bank_account_id: string | null;
   payment_date: string;

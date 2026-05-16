@@ -1,10 +1,13 @@
 import { useState, useRef } from 'react';
-import { Camera, LogOut, Building2, Plus, Trash2, X, Check, ChevronRight } from 'lucide-react';
+import { Camera, LogOut, Building2, Plus, Trash2, X, Check, ChevronRight, Tag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { useBankAccounts } from '../hooks/useExpenses';
+import { useBankAccounts, useCategories } from '../hooks/useExpenses';
+import CategoryIcon from '../components/icons/CategoryIcon';
 
 const ACCOUNT_COLORS = ['#007AFF', '#34C759', '#FF3B30', '#FF9500', '#AF52DE', '#5AC8FA', '#FF2D55', '#FFCC00'];
+const CATEGORY_COLORS = ['#EF4444', '#F59E0B', '#8B5CF6', '#EC4899', '#10B981', '#3B82F6', '#F97316', '#06B6D4', '#84CC16'];
+const CATEGORY_ICONS = ['utensils', 'coffee', 'shopping-bag', 'music', 'gamepad', 'gift', 'briefcase', 'dollar', 'circle'];
 
 type BankModalState = {
   mode: 'add' | 'edit';
@@ -15,15 +18,25 @@ type BankModalState = {
   color: string;
 } | null;
 
+type CategoryModalState = {
+  name: string;
+  icon: string;
+  color: string;
+} | null;
+
 export default function ProfileScreen() {
   const { user, profile, signOut, updateProfile, refreshProfile } = useAuth();
   const { accounts, refresh: refreshAccounts } = useBankAccounts();
+  const categories = useCategories();
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
   const [editingName, setEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [bankModal, setBankModal] = useState<BankModalState>(null);
   const [savingBank, setSavingBank] = useState(false);
+  const [categoryModal, setCategoryModal] = useState<CategoryModalState>(null);
+  const [savingCategory, setSavingCategory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +53,9 @@ export default function ProfileScreen() {
 
     if (!uploadError) {
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-      await updateProfile({ avatar_url: data.publicUrl + '?t=' + Date.now() });
+      const newUrl = data.publicUrl + '?t=' + Date.now();
+      setAvatarUrl(newUrl);
+      await updateProfile({ avatar_url: newUrl });
       await refreshProfile();
     }
     setUploadingPhoto(false);
@@ -86,7 +101,6 @@ export default function ProfileScreen() {
     await refreshAccounts();
   };
 
-  const avatarUrl = profile?.avatar_url;
   const initials = (profile?.display_name || profile?.email || 'U').slice(0, 2).toUpperCase();
 
   return (
