@@ -101,6 +101,20 @@ export default function ProfileScreen() {
     await refreshAccounts();
   };
 
+  const saveCategory = async () => {
+    if (!categoryModal || !categoryModal.name.trim() || !user) return;
+    setSavingCategory(true);
+    await supabase.from('categories').insert({
+      user_id: user.id,
+      name: categoryModal.name.trim(),
+      icon: categoryModal.icon,
+      color: categoryModal.color,
+    });
+    setSavingCategory(false);
+    setCategoryModal(null);
+    window.location.reload();
+  };
+
   const initials = (profile?.display_name || profile?.email || 'U').slice(0, 2).toUpperCase();
 
   return (
@@ -239,6 +253,45 @@ export default function ProfileScreen() {
           )}
         </div>
 
+        {/* Categories */}
+        <div className="card-glass rounded-3xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Tag size={18} className="text-blue-500" />
+              <h2 className="text-base font-bold text-gray-900">Categories</h2>
+            </div>
+            <button
+              onClick={() => setCategoryModal({ name: '', icon: 'circle', color: CATEGORY_COLORS[0] })}
+              className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center"
+            >
+              <Plus size={16} className="text-blue-500" />
+            </button>
+          </div>
+
+          {categories.filter(c => c.user_id).length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">No custom categories yet</p>
+          ) : (
+            <div className="space-y-2">
+              {categories.filter(c => c.user_id).map(cat => (
+                <div key={cat.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: cat.color + '22' }}>
+                      <CategoryIcon icon={cat.icon} size={18} color={cat.color} />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900">{cat.name}</p>
+                  </div>
+                  <button
+                    onClick={() => supabase.from('categories').delete().eq('id', cat.id).then(() => window.location.reload())}
+                    className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center"
+                  >
+                    <Trash2 size={14} className="text-red-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Sign out */}
         <button
           onClick={signOut}
@@ -329,6 +382,77 @@ export default function ProfileScreen() {
                 className="flex-1 py-3 btn-primary text-sm disabled:opacity-60"
               >
                 {savingBank ? 'Saving...' : bankModal.mode === 'add' ? 'Add Account' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category modal */}
+      {categoryModal && (
+        <div className="fixed inset-0 z-50 modal-overlay flex items-end justify-center p-4">
+          <div className="card-glass rounded-3xl p-5 w-full max-w-sm animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-gray-900">Add Category</h3>
+              <button onClick={() => setCategoryModal(null)} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                <X size={14} className="text-gray-600" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Category Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Groceries"
+                  value={categoryModal.name}
+                  onChange={e => setCategoryModal(c => c ? { ...c, name: e.target.value } : c)}
+                  className="input-glass w-full px-3 py-2.5 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-2 block">Icon</label>
+                <div className="flex gap-2 flex-wrap">
+                  {CATEGORY_ICONS.map(icon => (
+                    <button
+                      key={icon}
+                      onClick={() => setCategoryModal(c => c ? { ...c, icon } : c)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                        categoryModal.icon === icon ? 'ring-2 ring-blue-500' : 'bg-gray-100'
+                      }`}
+                    >
+                      <CategoryIcon icon={icon} size={18} color={categoryModal.color} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-2 block">Color</label>
+                <div className="flex gap-2 flex-wrap">
+                  {CATEGORY_COLORS.map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setCategoryModal(c => c ? { ...c, color } : c)}
+                      className="w-8 h-8 rounded-xl transition-transform hover:scale-110"
+                      style={{ backgroundColor: color }}
+                    >
+                      {categoryModal.color === color && <Check size={14} className="text-white mx-auto" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setCategoryModal(null)} className="flex-1 py-3 rounded-2xl bg-gray-100 text-gray-700 text-sm font-medium">
+                Cancel
+              </button>
+              <button
+                onClick={saveCategory}
+                disabled={savingCategory || !categoryModal.name.trim()}
+                className="flex-1 py-3 btn-primary text-sm disabled:opacity-60"
+              >
+                {savingCategory ? 'Saving...' : 'Add Category'}
               </button>
             </div>
           </div>
