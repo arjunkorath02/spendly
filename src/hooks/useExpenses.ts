@@ -9,7 +9,7 @@ export type DateFilter = {
   to?: string;    // YYYY-MM-DD
 };
 
-export function useExpenses(dateFilter: DateFilter, categoryId?: string, bankAccountId?: string) {
+export function useExpenses(dateFilter: DateFilter, categoryId?: string, bankAccountId?: string, type?: 'expense' | 'income') {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,13 +33,14 @@ export function useExpenses(dateFilter: DateFilter, categoryId?: string, bankAcc
       query = query.gte('payment_date', dateFilter.from).lte('payment_date', dateFilter.to + 'T23:59:59');
     }
 
+    if (type) query = query.eq('type', type);
     if (categoryId) query = query.eq('category_id', categoryId);
     if (bankAccountId) query = query.eq('bank_account_id', bankAccountId);
 
     const { data } = await query;
     setExpenses((data as Expense[]) || []);
     setLoading(false);
-  }, [user, dateFilter, categoryId, bankAccountId]);
+  }, [user, dateFilter, categoryId, bankAccountId, type]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
